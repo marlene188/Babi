@@ -1,59 +1,29 @@
-/* =====================
-   FRONTEND CHAT LOGIC
-   NEVER PUT API KEY HERE
-===================== */
+const input = document.getElementById("input");
+const sendBtn = document.getElementById("send");
+const chatBox = document.getElementById("chat");
 
-const chat = document.getElementById("chat");
-const input = document.getElementById("msg");
-
-
-/* Add message bubble */
-function add(text, type) {
+function addMessage(text, sender) {
   const div = document.createElement("div");
-  div.className = "msg " + type;
   div.textContent = text;
-
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
+  div.className = sender;
+  chatBox.appendChild(div);
 }
 
+async function sendMessage() {
+  const message = input.value.trim();
+  if (!message) return;
 
-/* Send message to backend */
-async function send() {
-  const text = input.value.trim();
-  if (!text) return;
-
+  addMessage("You: " + message, "user");
   input.value = "";
 
-  add(text, "user");
+  const res = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message }),
+  });
 
-  const typing = document.createElement("div");
-  typing.className = "msg bot";
-  typing.textContent = "Typing...";
-  chat.appendChild(typing);
-
-  try {
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ message: text })
-    });
-
-    const data = await res.json();
-
-    typing.remove();
-    add(data.reply, "bot");
-
-  } catch (err) {
-    typing.remove();
-    add("Server error. Try again.", "bot");
-  }
+  const data = await res.json();
+  addMessage("Bot: " + data.reply, "bot");
 }
 
-
-/* Enter key support */
-input.addEventListener("keydown", e => {
-  if (e.key === "Enter") send();
-});
+sendBtn.addEventListener("click", sendMessage);
